@@ -52,6 +52,17 @@ class MatchState extends ChangeNotifier {
   // Lógica de tácticas
   String matchType = 'Fútbol 11 (Infantil+)'; 
   String matchFormation = '1-4-4-2'; 
+  
+  // Configuración de Partido
+  bool isLocal = true;
+  String rivalName = '';
+
+  // Predicciones (Porra)
+  Map<String, dynamic> matchPredictions = {
+    'localScore': 0,
+    'visitorScore': 0,
+    'scorers': <Player>[],
+  };
 
   final Map<String, List<String>> availableFormations = {
     'Fútbol 5 (Prebenj/Benj)': ['1-2-2', '1-3-1', '1-1-2-1'],
@@ -72,6 +83,21 @@ class MatchState extends ChangeNotifier {
   void changeFormation(String formation) {
     matchFormation = formation;
     positionAssignments.clear(); // Limpiar el campo al cambiar formación
+    notifyListeners();
+  }
+
+  void setMatchConfig(bool local, String rival) {
+    isLocal = local;
+    rivalName = rival;
+    notifyListeners();
+  }
+
+  void setMatchPredictions(int localScore, int visitorScore, List<Player> scorers) {
+    matchPredictions = {
+      'localScore': localScore,
+      'visitorScore': visitorScore,
+      'scorers': scorers,
+    };
     notifyListeners();
   }
 

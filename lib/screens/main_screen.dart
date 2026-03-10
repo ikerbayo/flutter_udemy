@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import '../match_state.dart';
 import 'manage_players_screen.dart';
-import 'match_setup_screen.dart';
+import 'pre_match_config_screen.dart';
 import 'player_profile_screen.dart';
 
 class MainScreen extends StatelessWidget {
@@ -65,12 +65,7 @@ class MainScreen extends StatelessWidget {
             onPressed: () {
               if (matchState.players.isEmpty) return;
               
-              // IMPORTANTE: Limpiar antes de configurar el nuevo partido
-              matchState.currentMatchPlayers.clear();
-              matchState.sessionStats.clear(); 
-              matchState.selectedPlayer = null;
-              
-              Navigator.push(context, MaterialPageRoute(builder: (_) => const MatchSetupScreen()));
+              Navigator.push(context, MaterialPageRoute(builder: (_) => const PreMatchConfigScreen()));
             },
             icon: const Icon(Icons.sports_soccer),
             label: const Text('Nuevo Partido'),
