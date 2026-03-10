@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../match_state.dart';
+import '../player.dart';
 import 'live_match_screen.dart';
 
 class MatchSetupScreen extends StatelessWidget {
@@ -67,39 +68,100 @@ class MatchSetupScreen extends StatelessWidget {
                 child: Text('TOCA LOS CUADRADOS PARA CONVOCAR:', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
               ),
 
-              // --- 2. GRID DE JUGADORES (Convocatoria ultra rápida) ---
+              // --- 2. CAMPO DE FÚTBOL VISUAL ---
               Expanded(
-                child: GridView.builder(
-                  padding: const EdgeInsets.symmetric(horizontal: 10),
-                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: 4, 
-                    mainAxisSpacing: 10, 
-                    crossAxisSpacing: 10,
+                child: Container(
+                  width: double.infinity,
+                  margin: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Colors.green.shade600,
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(color: Colors.white, width: 3),
+                    boxShadow: const [BoxShadow(color: Colors.black26, blurRadius: 10)],
                   ),
-                  itemCount: matchState.players.length,
-                  itemBuilder: (context, index) {
-                    final player = matchState.players[index];
-                    final isSelected = matchState.currentMatchPlayers.contains(player);
-                    
-                    return InkWell(
-                      onTap: () => matchState.togglePlayerInMatch(player),
-                      child: Container(
-                        decoration: BoxDecoration(
-                          color: isSelected ? Colors.green : Colors.white,
-                          borderRadius: BorderRadius.circular(10),
-                          border: Border.all(color: isSelected ? Colors.green.shade900 : Colors.grey.shade400, width: 2),
-                          boxShadow: isSelected ? [const BoxShadow(color: Colors.black26, blurRadius: 4)] : [],
-                        ),
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Text(player.dorsal, style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: isSelected ? Colors.white : Colors.black87)),
-                            Text(player.name, maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(fontSize: 10, color: isSelected ? Colors.white : Colors.black54)),
-                          ],
+                  child: Stack(
+                    children: [
+                      // Líneas del campo (simplificadas)
+                      Center(
+                        child: Container(
+                          width: double.infinity,
+                          height: 2,
+                          color: Colors.white54,
                         ),
                       ),
-                    );
-                  },
+                      Center(
+                        child: Container(
+                          width: 80,
+                          height: 80,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            border: Border.all(color: Colors.white54, width: 2),
+                          ),
+                        ),
+                      ),
+                      // Filas de jugadores
+                      Builder(
+                        builder: (context) {
+                          // Parsear formación (ej: "1-4-4-2" -> [1, 4, 4, 2])
+                          List<int> formationRows = matchState.matchFormation
+                              .split('-')
+                              .map((e) => int.tryParse(e) ?? 0)
+                              .toList();
+                          
+                          return Column(
+                            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                            children: List.generate(formationRows.length, (rowIndex) {
+                              int playersInRow = formationRows[rowIndex];
+                              
+                              // Calcular índice base para esta fila
+                              int baseIndex = 0;
+                              for (int i = 0; i < rowIndex; i++) {
+                                baseIndex += formationRows[i];
+                              }
+
+                              return Row(
+                                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                                children: List.generate(playersInRow, (colIndex) {
+                                  int positionIndex = baseIndex + colIndex;
+                                  Player? assignedPlayer = matchState.positionAssignments[positionIndex];
+
+                                  return GestureDetector(
+                                    onTap: () => _showPlayerSelectionSheet(context, positionIndex),
+                                    child: Container(
+                                      width: 60,
+                                      height: 60,
+                                      decoration: BoxDecoration(
+                                        color: assignedPlayer != null ? Colors.blue.shade900 : Colors.white24,
+                                        shape: BoxShape.circle,
+                                        border: Border.all(color: Colors.white, width: 2),
+                                        boxShadow: assignedPlayer != null ? [const BoxShadow(color: Colors.black45, blurRadius: 5)] : [],
+                                      ),
+                                      child: Center(
+                                        child: assignedPlayer != null
+                                            ? Column(
+                                                mainAxisAlignment: MainAxisAlignment.center,
+                                                children: [
+                                                  Text(assignedPlayer.dorsal, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 18)),
+                                                  Text(
+                                                    assignedPlayer.name,
+                                                    style: const TextStyle(color: Colors.white, fontSize: 10),
+                                                    maxLines: 1,
+                                                    overflow: TextOverflow.ellipsis,
+                                                  ),
+                                                ],
+                                              )
+                                            : const Icon(Icons.add, color: Colors.white, size: 30),
+                                      ),
+                                    ),
+                                  );
+                                }),
+                              );
+                            }),
+                          );
+                        }
+                      ),
+                    ],
+                  ),
                 ),
               ),
 
@@ -114,14 +176,94 @@ class MatchSetupScreen extends StatelessWidget {
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                   ),
                   icon: const Icon(Icons.sports_soccer, size: 28),
-                  onPressed: matchState.currentMatchPlayers.isEmpty ? null : () {
+                  onPressed: matchState.positionAssignments.isEmpty ? null : () {
                     matchState.startNewMatch();
                     matchState.selectPlayer(matchState.currentMatchPlayers.first);
                     Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => const LiveMatchScreen()));
                   },
-                  label: Text('EMPEZAR PARTIDO (${matchState.currentMatchPlayers.length})', style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                  label: Text('EMPEZAR PARTIDO (${matchState.positionAssignments.length})', style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
                 ),
               )
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  void _showPlayerSelectionSheet(BuildContext context, int positionIndex) {
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
+      builder: (ctx) {
+        // Encontrar jugadores disponibles (no asignados o el actualmente asignado a esta posición)
+        final alreadyAssignedIds = matchState.positionAssignments.values.map((p) => p.id).toSet();
+        final currentAssignedInThisSlot = matchState.positionAssignments[positionIndex];
+        
+        // Excluimos a los que ya están asignados a OTRAS posiciones
+        final availablePlayers = matchState.players.where((p) {
+          if (currentAssignedInThisSlot?.id == p.id) return true;
+          return !alreadyAssignedIds.contains(p.id);
+        }).toList();
+
+        return Container(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  const Text('Seleccionar Jugador', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+                  if (currentAssignedInThisSlot != null)
+                    TextButton.icon(
+                      icon: const Icon(Icons.clear, color: Colors.red),
+                      label: const Text('Quitar', style: TextStyle(color: Colors.red)),
+                      onPressed: () {
+                        matchState.removePlayerFromPosition(positionIndex);
+                        Navigator.pop(ctx);
+                      },
+                    )
+                ],
+              ),
+              const SizedBox(height: 10),
+              Expanded(
+                child: availablePlayers.isEmpty 
+                  ? const Center(child: Text('No hay jugadores disponibles'))
+                  : GridView.builder(
+                      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                        crossAxisCount: 4,
+                        childAspectRatio: 0.8,
+                        crossAxisSpacing: 10,
+                        mainAxisSpacing: 10,
+                      ),
+                      itemCount: availablePlayers.length,
+                      itemBuilder: (context, index) {
+                        final player = availablePlayers[index];
+                        final isSelected = currentAssignedInThisSlot?.id == player.id;
+                        return InkWell(
+                          onTap: () {
+                            matchState.assignPlayerToPosition(positionIndex, player);
+                            Navigator.pop(ctx);
+                          },
+                          child: Container(
+                            decoration: BoxDecoration(
+                              color: isSelected ? Colors.blue.shade100 : Colors.grey.shade200,
+                              borderRadius: BorderRadius.circular(8),
+                              border: Border.all(color: isSelected ? Colors.blue : Colors.transparent, width: 2),
+                            ),
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Text(player.dorsal, style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
+                                Text(player.name, maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 12)),
+                              ],
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+              ),
             ],
           ),
         );

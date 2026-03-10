@@ -43,6 +43,9 @@ class MatchState extends ChangeNotifier {
   // JUGADOR SELECCIONADO (Asegúrate de que se llame así para que LiveMatch lo lea bien)
   Player? selectedPlayer;
 
+  // Asignaciones de posición en el campo visual (índice de slot -> Player)
+  Map<int, Player> positionAssignments = {};
+
   // Estadísticas temporales del partido en curso
   Map<String, Map<String, int>> sessionStats = {};
 
@@ -62,19 +65,45 @@ class MatchState extends ChangeNotifier {
   void changeMatchType(String type) {
     matchType = type;
     matchFormation = availableFormations[type]!.first;
+    positionAssignments.clear(); // Limpiar el campo al cambiar de tipo
     notifyListeners();
   }
 
   void changeFormation(String formation) {
     matchFormation = formation;
+    positionAssignments.clear(); // Limpiar el campo al cambiar formación
     notifyListeners();
   }
 
   void togglePlayerInMatch(Player player) {
     if (currentMatchPlayers.contains(player)) {
       currentMatchPlayers.remove(player);
+      // Remove from visual field if assigned
+      positionAssignments.removeWhere((key, value) => value.id == player.id);
     } else {
       currentMatchPlayers.add(player);
+    }
+    notifyListeners();
+  }
+
+  void assignPlayerToPosition(int positionIndex, Player player) {
+    // Si el jugador ya está en otra posición, lo quitamos de ahí
+    positionAssignments.removeWhere((key, value) => value.id == player.id);
+    positionAssignments[positionIndex] = player;
+    // Asegurarse de que esté en currentMatchPlayers
+    if (!currentMatchPlayers.contains(player)) {
+      currentMatchPlayers.add(player);
+    }
+    notifyListeners();
+  }
+
+  void removePlayerFromPosition(int positionIndex) {
+    if (positionAssignments.containsKey(positionIndex)) {
+      Player playerToRemove = positionAssignments[positionIndex]!;
+      positionAssignments.remove(positionIndex);
+      // Opcional: ¿Quitarlo también de currentMatchPlayers si no está en el campo?
+      // Por ahora lo dejamos en la lista de currentMatchPlayers como "banquillo"
+      currentMatchPlayers.remove(playerToRemove);
     }
     notifyListeners();
   }
@@ -83,6 +112,8 @@ class MatchState extends ChangeNotifier {
 
   void startNewMatch() {
     sessionStats.clear();
+    // Use the assigned players on the field initially
+    currentMatchPlayers = positionAssignments.values.toList();
     for (var p in currentMatchPlayers) {
       p.matchesPlayed++; // Sumar partido al historial global
       sessionStats[p.id] = {for (var cat in statCategories) cat: 0};

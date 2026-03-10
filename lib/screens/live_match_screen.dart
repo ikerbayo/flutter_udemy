@@ -18,34 +18,41 @@ class LiveMatchScreen extends StatelessWidget {
           ),
           body: Column(
             children: [
-              // 1. SELECTOR DE JUGADORES (Muy compacto)
+              // 1. SELECTOR DE JUGADORES (Muy compacto y horizontal)
               Container(
-                height: 160, // Altura fija para que no coma mucha pantalla
+                width: double.infinity,
+                padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
                 color: Colors.grey.shade200,
-                child: GridView.builder(
-                  padding: const EdgeInsets.all(4),
-                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: 6, // 6 jugadores por fila para que quepan todos
-                    mainAxisSpacing: 4,
-                    crossAxisSpacing: 4,
-                  ),
-                  itemCount: matchState.currentMatchPlayers.length,
-                  itemBuilder: (context, index) {
-                    final player = matchState.currentMatchPlayers[index];
+                child: Wrap(
+                  spacing: 6,
+                  runSpacing: 6,
+                  alignment: WrapAlignment.center,
+                  children: matchState.currentMatchPlayers.map((player) {
                     final isSelected = matchState.selectedPlayer?.id == player.id;
                     return InkWell(
                       onTap: () => matchState.selectPlayer(player),
                       child: Container(
+                        width: 45,
+                        height: 45,
                         decoration: BoxDecoration(
                           color: isSelected ? Colors.red : Colors.white,
-                          borderRadius: BorderRadius.circular(4),
+                          shape: BoxShape.circle,
+                          border: Border.all(color: isSelected ? Colors.red.shade900 : Colors.grey.shade400, width: 2),
+                          boxShadow: isSelected ? [const BoxShadow(color: Colors.black26, blurRadius: 4)] : [],
                         ),
                         child: Center(
-                          child: Text(player.dorsal, style: TextStyle(fontWeight: FontWeight.bold, color: isSelected ? Colors.white : Colors.black)),
+                          child: Text(
+                            player.dorsal, 
+                            style: TextStyle(
+                              fontWeight: FontWeight.bold, 
+                              fontSize: 16,
+                              color: isSelected ? Colors.white : Colors.black87
+                            )
+                          ),
                         ),
                       ),
                     );
-                  },
+                  }).toList(),
                 ),
               ),
 
