@@ -14,12 +14,17 @@ class MainScreen extends StatelessWidget {
       builder: (context, child) {
         return Scaffold(
           appBar: AppBar(
-            title: const Text('Redtable - Plantilla'),
+            title: const Text('LOLOGOL - Plantilla'),
             backgroundColor: Theme.of(context).colorScheme.inversePrimary,
             actions: [
               IconButton(
                 icon: const Icon(Icons.person_add),
-                onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const ManagePlayersScreen())),
+                onPressed: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => const ManagePlayersScreen(),
+                  ),
+                ),
               ),
             ],
           ),
@@ -47,14 +52,24 @@ class MainScreen extends StatelessWidget {
                     return ListTile(
                       leading: CircleAvatar(
                         backgroundColor: Colors.red.shade100,
-                        child: Text(player.dorsal, style: TextStyle(color: Colors.red.shade900)),
+                        child: Text(
+                          player.dorsal,
+                          style: TextStyle(color: Colors.red.shade900),
+                        ),
                       ),
-                      title: Text(player.name, style: const TextStyle(fontWeight: FontWeight.bold)),
-                      subtitle: Text('Partidos Jugados: ${player.matchesPlayed}'),
+                      title: Text(
+                        player.name,
+                        style: const TextStyle(fontWeight: FontWeight.bold),
+                      ),
+                      subtitle: Text(
+                        'Partidos Jugados: ${player.matchesPlayed}',
+                      ),
                       onTap: () {
                         Navigator.push(
                           context,
-                          MaterialPageRoute(builder: (_) => PlayerProfileScreen(player: player)),
+                          MaterialPageRoute(
+                            builder: (_) => PlayerProfileScreen(player: player),
+                          ),
                         );
                       },
                       trailing: const Icon(Icons.arrow_forward_ios, size: 16),
@@ -64,8 +79,11 @@ class MainScreen extends StatelessWidget {
           floatingActionButton: FloatingActionButton.extended(
             onPressed: () {
               if (matchState.players.isEmpty) return;
-              
-              Navigator.push(context, MaterialPageRoute(builder: (_) => const PreMatchConfigScreen()));
+
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const PreMatchConfigScreen()),
+              );
             },
             icon: const Icon(Icons.sports_soccer),
             label: const Text('Nuevo Partido'),
