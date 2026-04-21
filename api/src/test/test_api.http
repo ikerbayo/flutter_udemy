@@ -1,0 +1,9 @@
+### Registro de nuevo entrenador
+POST http://localhost:8080/api/auth/register
+Content-Type: application/json
+
+{
+  "nombre": "Entrenador Pep",
+  "email": "dt@equipo.com",
+  "password": "password123"
+}

@@ -1,0 +1,136 @@
+### Variables Globales
+@host = http://localhost:8080
+
+### 1. Registro de nuevo entrenador (Este paso auto-guarda el JWT en una variable de IntelliJ)
+POST {{host}}/api/auth/register
+Content-Type: application/json
+
+{
+  "nombre": "admin",
+  "email": "nuevo_saas@lolo.com",
+  "passwordD": "password123"
+}
+
+> {%
+    // IntelliJ guardará el token de la respuesta para los siguientes requests
+    client.global.set("auth_token", response.body.token);
+%}
+
+
+### 2. Login de Entrenador (Úsalo si ya te registraste, también guarda el token)
+POST {{host}}/api/auth/login
+Content-Type: application/json
+
+{
+  "email": "nuevo_saas@lolo.com",
+  "password": "password123"
+}
+
+> {%
+    client.global.set("auth_token", response.body.token);
+%}
+
+
+### 3. Crear Tu Propio Club/Liga
+POST {{host}}/api/clubs
+Content-Type: application/json
+Authorization: Bearer {{auth_token}}
+
+{
+  "nombre": "Mi Súper Club",
+  "logo": "https://ejemplo.com/misuperlogo.png"
+}
+
+### 4. Crear Equipo
+# Fíjate cómo pasamos el token en la cabecera 'Authorization' usando la variable {{auth_token}}
+POST {{host}}/api/teams
+Content-Type: application/json
+Authorization: Bearer {{auth_token}}
+
+{
+  "nombre": "Los Pinos FC",
+  "categoriaFutbol": "11",
+  "clubId": 1
+}
+
+
+### 5. Crear Jugador (Asegúrate de que el teamId exista primero)
+POST {{host}}/api/players
+Content-Type: application/json
+Authorization: Bearer {{auth_token}}
+
+{
+  "nombre": "Leo Messi",
+  "dorsal": 10,
+  "posicion": "Delantero",
+  "teamId": 1
+}
+
+
+### 6. Crear Partido
+POST {{host}}/api/matches
+Content-Type: application/json
+Authorization: Bearer {{auth_token}}
+
+{
+  "teamHomeId": 1,
+  "teamAwayId": 2,
+  "fecha": "2026-04-10T18:00:00",
+  "estado": "Programado"
+}
+
+### 7. Obtener Mis Equipos (Fase 3 - Trae escudos y total jugadores)
+GET {{host}}/api/teams/my-teams
+Authorization: Bearer {{auth_token}}
+
+### 8. Sincronizar Eventos de Partido (Fase 4 - Online/Offline Sync y Anulaciones)
+# A continuación simulamos cómo el móvil mandaría una ráfaga de eventos acumulados,
+# incluyendo un evento tradicional (+1) y un evento de error/anulación (-1).
+POST {{host}}/api/events/sync
+Content-Type: application/json
+Authorization: Bearer {{auth_token}}
+
+{
+  "events": [
+    {
+      "matchId": 1,
+      "playerId": 1,
+      "tipo": "Gol",
+      "minuto": 15,
+      "valor": 1
+    },
+    {
+      "matchId": 1,
+      "playerId": 1,
+      "tipo": "Gol",
+      "minuto": 15,
+      "valor": -1,
+      "descripcionPersonalizada": "Gol anulado por VAR (Corrección del DT)"
+    }
+  ]
+}
+
+### 9. Finalizar el Partido (Para que cuente en la Clasificación)
+# Nota: La tabla de posiciones solo suma puntos de partidos "Finalizados"
+PATCH {{host}}/api/matches/1/status?estado=Finalizado
+Authorization: Bearer {{auth_token}}
+
+### 10. Obtener Clasificación de mi Liga/Club (Fase 5 - Standings, SaaS mode)
+GET {{host}}/api/standings/my-standings
+Authorization: Bearer {{auth_token}}
+
+### 11. Obtener los últimos 5 partidos (Historial) de un equipo (Fase 5)
+GET {{host}}/api/standings/team/1/history
+Authorization: Bearer {{auth_token}}
+
+### 12. Logout (Borra el token JWT del cliente)
+# Hacemos una petición dummy para poder ejecutar el script de limpieza
+GET {{host}}/api/auth/login
+Content-Type: application/json
+
+{}
+
+> {%
+    client.global.set("auth_token", "");
+    client.log("✅ Sesión cerrada. Token eliminado.");
+%}

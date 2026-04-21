@@ -1,3 +1,6 @@
+# https://dart.dev/guides/libraries/private-files
+# Created by `flutter create` template
+
 # Miscellaneous
 *.class
 *.log
@@ -5,11 +8,9 @@
 *.swp
 .DS_Store
 .atom/
-.build/
 .buildlog/
 .history
 .svn/
-.swiftpm/
 migrate_working_dir/
 
 # IntelliJ related
@@ -18,28 +19,82 @@ migrate_working_dir/
 *.iws
 .idea/
 
-# The .vscode folder contains launch configuration and tasks you configure in
-# VS Code which you may wish to be included in version control, so this line
-# is commented out by default.
-#.vscode/
+# The .vscode folder contains launch configurations and tasks you configure in
+# VS Code which you may wish to be included. In that case, ignore only the settings.json
+# and tasks.json files in that folder.
+# .vscode/settings.json
+# .vscode/tasks.json
+# .vscode/launch.json
+# .vscode/extensions.json
+.vscode/
 
-# Flutter/Dart/Pub related
-**/doc/api/
-**/ios/Flutter/.last_build_id
+# Flutter/Dart related
+**/build/
 .dart_tool/
+.flutter-plugins
 .flutter-plugins-dependencies
+.packages
 .pub-cache/
 .pub/
-/build/
-/coverage/
+.web_assets/
+# pubspec.lock # Standard to track for apps, untrack if desired
 
-# Symbolication related
-app.*.symbols
+# Android related
+android/**/build/
+android/.gradle/
+android/local.properties
+android/key.properties
+android/app/debug/
+android/app/profile/
+android/app/release/
 
-# Obfuscation related
-app.*.map.json
+# iOS related
+ios/**/build/
+ios/Flutter/Generated.xcconfig
+ios/Flutter/flutter_export_environment.sh
+ios/Flutter/Flutter.podspec
+ios/Flutter/Flutter.framework
+ios/Flutter/App.framework
+ios/Flutter/App.xcframework
+ios/Flutter/GeneratedPluginRegistrant.h
+ios/Flutter/GeneratedPluginRegistrant.m
+ios/Pods/
+ios/.symlinks/
+Podfile.lock
 
-# Android Studio will place build artifacts here
-/android/app/debug
-/android/app/profile
-/android/app/release
+# macOS related
+**/macos/**
+macos/Flutter/GeneratedPluginRegistrant.swift
+macos/Flutter/ephemeral/
+macos/Pods/
+macos/.symlinks/
+
+# Linux related
+**/linux/**
+linux/flutter/ephemeral/
+
+# Windows related
+**/windows/**
+windows/flutter/ephemeral/
+
+# Maven / Java Build
+**/target/
+*.jar
+*.war
+*.ear
+.mvn/
+mvnw
+mvnw.cmd
+localhost.sql
+
+# Agent / Memory files (Clutter)
+AGENTS.md
+HEARTBEAT.md
+IDENTITY.md
+SOUL.md
+TOOLS.md
+USER.md
+BOOTSTRAP.md
+memory/
+.openclaw/
+.openclawignore

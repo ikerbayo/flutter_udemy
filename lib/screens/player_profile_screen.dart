@@ -13,81 +13,182 @@ class PlayerProfileScreen extends StatelessWidget {
       listenable: matchState,
       builder: (context, child) {
         return Scaffold(
+          extendBodyBehindAppBar: true,
           appBar: AppBar(
-            title: Text('Perfil: ${player.name}'),
-            backgroundColor: Colors.red.shade400,
+            title: Text('Perfil: ${player.name}', style: const TextStyle(fontWeight: FontWeight.bold)),
+            backgroundColor: Colors.transparent,
+            elevation: 0,
             foregroundColor: Colors.white,
           ),
-          body: SingleChildScrollView(
-            padding: const EdgeInsets.all(20),
-            child: Column(
-              children: [
-                // Avatar y Nombre
-                CircleAvatar(
-                  radius: 40,
-                  backgroundColor: Colors.red.shade100,
-                  child: Text(player.dorsal, style: const TextStyle(fontSize: 30, fontWeight: FontWeight.bold, color: Colors.red)),
-                ),
-                const SizedBox(height: 15),
-                Text(player.name, style: const TextStyle(fontSize: 26, fontWeight: FontWeight.bold)),
-                const SizedBox(height: 20),
-                
-                // Muestra los Partidos Jugados
-                Card(
-                  color: Colors.blue.shade50,
-                  elevation: 2,
-                  child: ListTile(
-                    leading: const Icon(Icons.sports_soccer, color: Colors.blue, size: 30),
-                    title: const Text('Partidos Jugados', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
-                    trailing: Text('${player.matchesPlayed}', style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.blue)),
-                  ),
-                ),
-                
-                const SizedBox(height: 20),
-                const Divider(height: 20, thickness: 1.5),
-                const Padding(
-                  padding: EdgeInsets.symmetric(vertical: 10),
-                  child: Text('Rendimiento y Estadísticas', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
-                ),
-
-                // Lista dinámica de estadísticas con Porcentaje/Media por partido
-                ListView.builder(
-                  shrinkWrap: true,
-                  physics: const NeverScrollableScrollPhysics(),
-                  itemCount: player.stats.length,
-                  itemBuilder: (context, index) {
-                    String key = player.stats.keys.elementAt(index);
-                    int totalValue = player.stats[key] ?? 0;
-                    
-                    // CÁLCULO DE LA MEDIA POR PARTIDO (Evitando dividir entre cero)
-                    double average = player.matchesPlayed > 0 
-                        ? totalValue / player.matchesPlayed 
-                        : 0.0;
-
-                    return Card(
-                      elevation: 1,
-                      margin: const EdgeInsets.symmetric(vertical: 6),
-                      child: ListTile(
-                        title: Text(key, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w600)),
-                        // Muestra el promedio con 2 decimales
-                        subtitle: Text(
-                          'Media: ${average.toStringAsFixed(2)} por partido', 
-                          style: TextStyle(color: Colors.grey.shade700, fontWeight: FontWeight.w500)
-                        ),
-                        // Muestra el total a la derecha en grande
-                        trailing: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
+          body: Container(
+            decoration: const BoxDecoration(
+              gradient: LinearGradient(
+                colors: [Color(0xFF667eea), Color(0xFF764ba2)],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+            ),
+            child: SafeArea(
+              child: Column(
+                children: [
+                  _buildProfileHeader(player),
+                  const SizedBox(height: 24),
+                  Expanded(
+                    child: Container(
+                      width: double.infinity,
+                      decoration: const BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.vertical(top: Radius.circular(32)),
+                      ),
+                      child: SingleChildScrollView(
+                        padding: const EdgeInsets.all(24.0),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            const Text('Total', style: TextStyle(fontSize: 11, color: Colors.grey)),
-                            Text('$totalValue', style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
+                            _buildStatSummary(player),
+                            const SizedBox(height: 32),
+                            const Text(
+                              'Estadísticas Detalladas',
+                              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFF333333)),
+                            ),
+                            const SizedBox(height: 16),
+                            _buildStatsList(player),
                           ],
                         ),
                       ),
-                    );
-                  },
-                ),
-              ],
+                    ),
+                  ),
+                ],
+              ),
             ),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildProfileHeader(Player player) {
+    return Column(
+      children: [
+        const SizedBox(height: 10),
+        Stack(
+          children: [
+            Container(
+              width: 90,
+              height: 90,
+              decoration: BoxDecoration(
+                color: Colors.white.withOpacity(0.2),
+                shape: BoxShape.circle,
+                border: Border.all(color: Colors.white, width: 3),
+              ),
+              child: Center(
+                child: Text(
+                  player.dorsal,
+                  style: const TextStyle(fontSize: 36, fontWeight: FontWeight.bold, color: Colors.white),
+                ),
+              ),
+            ),
+            if (player.foto != null)
+              Positioned.fill(
+                child: ClipOval(
+                  child: Image.network(
+                    player.foto!,
+                    fit: BoxFit.cover,
+                    errorBuilder: (context, error, stackTrace) => Center(
+                      child: Text(
+                        player.dorsal,
+                        style: const TextStyle(fontSize: 36, fontWeight: FontWeight.bold, color: Colors.white),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+          ],
+        ),
+        const SizedBox(height: 16),
+        Text(
+          player.name,
+          style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.white),
+        ),
+        Text(
+          player.posicionPrincipal ?? 'Sin posición',
+          style: TextStyle(color: Colors.white.withOpacity(0.8), fontSize: 14, fontWeight: FontWeight.w500),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildStatSummary(Player player) {
+    return Row(
+      children: [
+        _buildSummaryItem('Partidos', '${player.matchesPlayed}', Icons.sports_soccer, Colors.blue),
+        const SizedBox(width: 16),
+        _buildSummaryItem('Goles', '${player.goals}', Icons.star, Colors.orange),
+      ],
+    );
+  }
+
+  Widget _buildSummaryItem(String label, String value, IconData icon, Color color) {
+    return Expanded(
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: color.withOpacity(0.05),
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: color.withOpacity(0.1)),
+        ),
+        child: Column(
+          children: [
+            Icon(icon, color: color, size: 28),
+            const SizedBox(height: 8),
+            Text(value, style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: color)),
+            Text(label, style: TextStyle(fontSize: 12, color: Colors.grey.shade600, fontWeight: FontWeight.w600)),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildStatsList(Player player) {
+    return ListView.separated(
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      itemCount: player.stats.length,
+      separatorBuilder: (_, __) => const SizedBox(height: 12),
+      itemBuilder: (context, index) {
+        String key = player.stats.keys.elementAt(index);
+        int totalValue = player.stats[key] ?? 0;
+        double average = player.matchesPlayed > 0 ? totalValue / player.matchesPlayed : 0.0;
+
+        return Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: Colors.grey.shade50,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: Colors.grey.shade100),
+          ),
+          child: Row(
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(key, style: const TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF333333))),
+                    Text(
+                      'Media: ${average.toStringAsFixed(2)} por partido', 
+                      style: TextStyle(color: Colors.grey.shade500, fontSize: 12)
+                    ),
+                  ],
+                ),
+              ),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  Text('$totalValue', style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Color(0xFF667eea))),
+                  const Text('TOTAL', style: TextStyle(fontSize: 9, fontWeight: FontWeight.bold, color: Colors.grey)),
+                ],
+              ),
+            ],
           ),
         );
       },
