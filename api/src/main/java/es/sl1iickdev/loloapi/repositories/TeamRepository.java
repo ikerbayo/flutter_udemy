@@ -15,4 +15,5 @@ public interface TeamRepository extends JpaRepository<Team, Long> {
     List<Team> findByClubPropietarioId(Long propietarioId);
     Optional<Team> findByIdAndClubPropietarioId(Long id, Long propietarioId);
     List<Team> findByClubIdAndClubPropietarioId(Long clubId, Long propietarioId);
+    List<Team> findByParentTeamIdAndClubPropietarioId(Long parentTeamId, Long propietarioId);
 }

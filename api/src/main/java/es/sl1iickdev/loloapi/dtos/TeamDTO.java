@@ -11,4 +11,5 @@ public class TeamDTO {
     private String clubNombre;
     private String escudoUrl;
     private Integer totalJugadores;
+    private Long parentTeamId;
 }

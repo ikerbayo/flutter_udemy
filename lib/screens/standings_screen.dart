@@ -3,7 +3,8 @@ import '../api_service.dart';
 
 class StandingsScreen extends StatefulWidget {
   final Map<String, dynamic> club;
-  const StandingsScreen({super.key, required this.club});
+  final Map<String, dynamic>? currentTeam;
+  const StandingsScreen({super.key, required this.club, this.currentTeam});
 
   @override
   State<StandingsScreen> createState() => _StandingsScreenState();
@@ -21,7 +22,9 @@ class _StandingsScreenState extends State<StandingsScreen> {
 
   Future<void> _loadStandings() async {
     try {
-      final standings = await apiService.getStandingsByClub(widget.club['id']);
+      final standings = widget.currentTeam != null 
+          ? await apiService.getStandingsByTeam(widget.currentTeam!['id'])
+          : await apiService.getStandingsByClub(widget.club['id']);
       setState(() {
         _standings = standings;
         _isLoading = false;
@@ -48,7 +51,7 @@ class _StandingsScreenState extends State<StandingsScreen> {
     return Scaffold(
       extendBodyBehindAppBar: true,
       appBar: AppBar(
-        title: Text('Clasificación: ${widget.club['nombre']}', style: const TextStyle(fontWeight: FontWeight.bold)),
+        title: Text('Clasificación: ${widget.currentTeam != null ? widget.currentTeam!['nombre'] : widget.club['nombre']}', style: const TextStyle(fontWeight: FontWeight.bold)),
         backgroundColor: Colors.transparent,
         elevation: 0,
         foregroundColor: Colors.white,

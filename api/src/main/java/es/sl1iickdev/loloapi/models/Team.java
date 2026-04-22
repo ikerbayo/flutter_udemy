@@ -24,6 +24,9 @@ public class Team {
     @Column(name = "categoria_futbol")
     private String categoriaFutbol;
 
+    @Column(name = "parent_team_id")
+    private Long parentTeamId;
+
     // Opcional: Relación inversa para ver los jugadores desde el equipo
     @OneToMany(mappedBy = "team", cascade = CascadeType.ALL)
     private List<Player> players;

@@ -36,6 +36,13 @@ public class TeamService {
                 .collect(Collectors.toList());
     }
 
+    public List<TeamDTO> getRivalesByTeam(Long parentTeamId) {
+        User user = SecurityUtils.getCurrentUser();
+        return teamRepository.findByParentTeamIdAndClubPropietarioId(parentTeamId, user.getId()).stream()
+                .map(this::convertToDTO)
+                .collect(Collectors.toList());
+    }
+
     public TeamDTO getTeamById(Long id) {
         User user = SecurityUtils.getCurrentUser();
         Team team = teamRepository.findByIdAndClubPropietarioId(id, user.getId())
@@ -57,9 +64,17 @@ public class TeamService {
         team.setNombre(dto.getNombre());
         team.setCategoriaFutbol(dto.getCategoriaFutbol());
         team.setClub(miClub);
+        team.setParentTeamId(dto.getParentTeamId());
 
         Team saved = teamRepository.save(team);
         return convertToDTO(saved);
+    }
+
+    public void deleteTeam(Long id) {
+        User user = SecurityUtils.getCurrentUser();
+        Team team = teamRepository.findByIdAndClubPropietarioId(id, user.getId())
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.FORBIDDEN, "No tienes acceso a este equipo o no existe"));
+        teamRepository.delete(team);
     }
 
     private TeamDTO convertToDTO(Team team) {
@@ -72,6 +87,7 @@ public class TeamService {
             dto.setClubNombre(team.getClub().getNombre());
             dto.setEscudoUrl(team.getClub().getLogo());
         }
+        dto.setParentTeamId(team.getParentTeamId());
         dto.setTotalJugadores(team.getPlayers() != null ? team.getPlayers().size() : 0);
         return dto;
     }

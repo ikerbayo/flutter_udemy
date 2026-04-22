@@ -1,9 +1,13 @@
 import 'dart:convert';
+import 'dart:io';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 
 class ApiService {
-  static const String baseUrl = 'http://localhost:8080/api'; // Or your actual API URL
+  static String get baseUrl {
+    // Usamos localhost tanto para iOS como para Android (con adb reverse)
+    return 'http://localhost:8080/api';
+  }
 
   Future<String?> getToken() async {
     final prefs = await SharedPreferences.getInstance();
@@ -151,18 +155,23 @@ class ApiService {
     }
   }
 
-  Future<dynamic> createTeam(String nombre, String categoriaFutbol, int clubId, String escudoUrl) async {
+  Future<dynamic> createTeam(String nombre, String categoriaFutbol, int clubId, String escudoUrl, {int? parentTeamId}) async {
     try {
       final token = await getToken();
+      final body = <String, dynamic>{
+        'nombre': nombre,
+        'categoriaFutbol': categoriaFutbol,
+        'clubId': clubId,
+        'escudoUrl': escudoUrl,
+      };
+      if (parentTeamId != null) {
+        body['parentTeamId'] = parentTeamId;
+      }
+      
       final response = await http.post(
         Uri.parse('$baseUrl/teams'),
         headers: _headers(token),
-        body: jsonEncode({
-          'nombre': nombre,
-          'categoriaFutbol': categoriaFutbol,
-          'clubId': clubId,
-          'escudoUrl': escudoUrl,
-        }),
+        body: jsonEncode(body),
       );
       if (response.statusCode == 200 || response.statusCode == 201) {
         if (response.body.trim().isEmpty) {
@@ -194,6 +203,24 @@ class ApiService {
     }
   }
 
+  Future<List<dynamic>> getRivalesByTeam(int teamId) async {
+    try {
+      final token = await getToken();
+      final response = await http.get(
+        Uri.parse('$baseUrl/teams/$teamId/rivals'),
+        headers: _headers(token),
+      );
+      if (response.statusCode == 200) {
+        return jsonDecode(response.body) as List<dynamic>;
+      } else {
+        throw Exception('Error al obtener rivales de equipo: ${response.statusCode}');
+      }
+    } catch (e) {
+      print('Get rivales by team error: $e');
+      rethrow;
+    }
+  }
+
   // 4. Players
   Future<List<dynamic>> getPlayers(int teamId) async {
     try {
@@ -213,7 +240,7 @@ class ApiService {
     }
   }
 
-  Future<dynamic> createPlayer(String nombre, int dorsal, int teamId) async {
+  Future<dynamic> createPlayer(String nombre, int dorsal, String posicion, String foto, int teamId) async {
     final token = await getToken();
     final response = await http.post(
       Uri.parse('$baseUrl/players'),
@@ -221,8 +248,8 @@ class ApiService {
       body: jsonEncode({
         'nombre': nombre,
         'dorsal': dorsal,
-        'posicion': 'Desconocida',
-        'foto': '',
+        'posicion': posicion,
+        'foto': foto,
         'teamId': teamId,
       }),
     );
@@ -287,6 +314,24 @@ class ApiService {
       }
     } catch (e) {
       print('Get standings error: $e');
+      rethrow;
+    }
+  }
+
+  Future<List<dynamic>> getStandingsByTeam(int teamId) async {
+    try {
+      final token = await getToken();
+      final response = await http.get(
+        Uri.parse('$baseUrl/standings/team/$teamId'),
+        headers: _headers(token),
+      );
+      if (response.statusCode == 200) {
+        return jsonDecode(response.body) as List<dynamic>;
+      } else {
+        throw Exception('Error al obtener clasificación del equipo: ${response.statusCode}');
+      }
+    } catch (e) {
+      print('Get standings team error: $e');
       rethrow;
     }
   }

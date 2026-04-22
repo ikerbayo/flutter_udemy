@@ -7,7 +7,9 @@ import 'manage_players_screen.dart';
 
 class TeamsScreen extends StatefulWidget {
   final Map<String, dynamic> club;
-  const TeamsScreen({super.key, required this.club});
+  final bool initialShowRivales;
+  final Map<String, dynamic>? currentTeam;
+  const TeamsScreen({super.key, required this.club, this.initialShowRivales = false, this.currentTeam});
 
   @override
   State<TeamsScreen> createState() => _TeamsScreenState();
@@ -16,16 +18,22 @@ class TeamsScreen extends StatefulWidget {
 class _TeamsScreenState extends State<TeamsScreen> {
   List<dynamic> _teams = [];
   bool _isLoading = true;
+  late bool _showRivales;
+
+  bool get _isIsolatedRivalsMode => widget.currentTeam != null && _showRivales;
 
   @override
   void initState() {
     super.initState();
+    _showRivales = widget.initialShowRivales;
     _loadTeams();
   }
 
   Future<void> _loadTeams() async {
     try {
-      final teams = await apiService.getTeamsByClub(widget.club['id']);
+      final teams = widget.currentTeam != null && widget.initialShowRivales
+          ? await apiService.getRivalesByTeam(widget.currentTeam!['id'])
+          : await apiService.getTeamsByClub(widget.club['id']);
       setState(() {
         _teams = teams;
         _isLoading = false;
@@ -38,11 +46,9 @@ class _TeamsScreenState extends State<TeamsScreen> {
     }
   }
 
-  bool _showRivales = false;
-
-  @override
   Widget build(BuildContext context) {
     final filteredTeams = _teams.where((t) {
+      if (widget.currentTeam != null && widget.initialShowRivales) return true;
       bool isExterno = t['categoriaFutbol'] == 'Externo';
       return _showRivales ? isExterno : !isExterno;
     }).toList();
@@ -50,7 +56,7 @@ class _TeamsScreenState extends State<TeamsScreen> {
     return Scaffold(
       extendBodyBehindAppBar: true,
       appBar: AppBar(
-        title: Text(widget.club['nombre'], style: const TextStyle(fontWeight: FontWeight.bold)),
+        title: Text(widget.currentTeam != null ? 'Rivales: ${widget.currentTeam!['nombre']}' : widget.club['nombre'], style: const TextStyle(fontWeight: FontWeight.bold)),
         backgroundColor: Colors.transparent,
         elevation: 0,
         foregroundColor: Colors.white,
@@ -66,8 +72,7 @@ class _TeamsScreenState extends State<TeamsScreen> {
         child: SafeArea(
           child: Column(
             children: [
-              _buildHeaderActions(),
-              const SizedBox(height: 20),
+              const SizedBox(height: 10),
               Expanded(
                 child: Container(
                   width: double.infinity,
@@ -93,6 +98,170 @@ class _TeamsScreenState extends State<TeamsScreen> {
           ),
         ),
       ),
+      floatingActionButton: _isIsolatedRivalsMode ? null : FloatingActionButton(
+        onPressed: () => _showCreateTeamModal(context),
+        backgroundColor: const Color(0xFF667eea),
+        child: const Icon(Icons.add, color: Colors.white),
+      ),
+    );
+  }
+
+  void _showCreateTeamModal(BuildContext context) {
+    final nameCtrl = TextEditingController();
+    final categoryCtrl = TextEditingController(text: _showRivales ? 'Externo' : '');
+    final logoCtrl = TextEditingController();
+    bool isSubmitting = false;
+    String? errorMsg;
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (BuildContext modalContext) {
+        return StatefulBuilder(
+          builder: (BuildContext context, StateSetter setModalState) {
+            return Padding(
+              padding: EdgeInsets.only(
+                bottom: MediaQuery.of(modalContext).viewInsets.bottom,
+              ),
+              child: Container(
+                padding: const EdgeInsets.all(24),
+                decoration: const BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.vertical(top: Radius.circular(32)),
+                ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Text(
+                      _showRivales ? 'Añadir Nuevo Rival' : 'Añadir Nuevo Equipo',
+                      style: TextStyle(
+                        fontSize: 22,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.grey.shade800,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: 20),
+                    TextField(
+                      controller: nameCtrl,
+                      decoration: InputDecoration(
+                        labelText: 'Nombre del Equipo',
+                        prefixIcon: const Icon(Icons.group, color: Color(0xFF667eea)),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        focusedBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: const BorderSide(color: Color(0xFF667eea), width: 2),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    TextField(
+                      controller: categoryCtrl,
+                      decoration: InputDecoration(
+                        labelText: 'Categoría (ej. Fútbol 7)',
+                        prefixIcon: const Icon(Icons.category, color: Color(0xFF667eea)),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        focusedBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: const BorderSide(color: Color(0xFF667eea), width: 2),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    TextField(
+                      controller: logoCtrl,
+                      decoration: InputDecoration(
+                        labelText: 'URL del Escudo (Opcional)',
+                        prefixIcon: const Icon(Icons.image, color: Color(0xFF667eea)),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        focusedBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: const BorderSide(color: Color(0xFF667eea), width: 2),
+                        ),
+                      ),
+                    ),
+                    if (errorMsg != null) ...[
+                      const SizedBox(height: 12),
+                      Text(
+                        errorMsg!,
+                        style: const TextStyle(color: Colors.red, fontSize: 13),
+                        textAlign: TextAlign.center,
+                      )
+                    ],
+                    const SizedBox(height: 24),
+                    ElevatedButton(
+                      onPressed: isSubmitting
+                          ? null
+                          : () async {
+                              final nombre = nameCtrl.text.trim();
+                              final categoria = categoryCtrl.text.trim();
+                              if (nombre.isEmpty) {
+                                setModalState(() => errorMsg = "El nombre es obligatorio");
+                                return;
+                              }
+                              setModalState(() {
+                                isSubmitting = true;
+                                errorMsg = null;
+                              });
+
+                              try {
+                                await apiService.createTeam(
+                                  nombre, 
+                                  categoria.isEmpty ? 'Fútbol 11' : categoria, 
+                                  widget.club['id'], 
+                                  logoCtrl.text.trim(),
+                                  parentTeamId: widget.currentTeam != null ? widget.currentTeam!['id'] : null,
+                                );
+                                if (modalContext.mounted) {
+                                  Navigator.pop(modalContext);
+                                }
+                                _loadTeams();
+                                if (mounted) {
+                                  ScaffoldMessenger.of(this.context).showSnackBar(
+                                    const SnackBar(
+                                      content: Text('Equipo guardado correctamente.'),
+                                      backgroundColor: Colors.green,
+                                    ),
+                                  );
+                                }
+                              } catch (e) {
+                                setModalState(() {
+                                  isSubmitting = false;
+                                  errorMsg = "Error: ${e.toString()}";
+                                });
+                              }
+                            },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFF667eea),
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                      child: isSubmitting
+                          ? const SizedBox(
+                              height: 20,
+                              width: 20,
+                              child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                            )
+                          : const Text('Guardar', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
+        );
+      },
     );
   }
 
@@ -107,85 +276,14 @@ class _TeamsScreenState extends State<TeamsScreen> {
             _showRivales ? 'No hay rivales registrados todavía' : 'No tienes equipos en este club',
             style: const TextStyle(color: Colors.grey, fontWeight: FontWeight.bold),
           ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildHeaderActions() {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16.0),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          _buildQuickAction(
-            icon: Icons.table_chart_outlined,
-            label: 'Tabla',
-            onTap: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (_) => StandingsScreen(club: widget.club)),
-              );
-            },
-          ),
-          _buildQuickAction(
-            icon: _showRivales ? Icons.group : Icons.sports_soccer,
-            label: _showRivales ? 'Mis Equipos' : 'Rivales',
-            onTap: () => setState(() => _showRivales = !_showRivales),
-          ),
-          _buildQuickAction(
-            icon: Icons.play_circle_fill,
-            label: 'Jugar',
-            isPrimary: true,
-            onTap: () async {
-              if (_teams.isNotEmpty) {
-                final myTeams = _teams.where((t) => t['categoriaFutbol'] != 'Externo').toList();
-                if (myTeams.isNotEmpty) {
-                  await matchState.selectTeam(myTeams.first['id']);
-                  if (mounted) {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (_) => const PreMatchConfigScreen()),
-                    );
-                  }
-                } else {
-                   ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Crea un equipo primero.')));
-                }
-              }
-            },
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildQuickAction({
-    required IconData icon,
-    required String label,
-    required VoidCallback onTap,
-    bool isPrimary = false,
-  }) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-        decoration: BoxDecoration(
-          color: isPrimary ? Colors.white : Colors.white.withOpacity(0.2),
-          borderRadius: BorderRadius.circular(16),
-        ),
-        child: Row(
-          children: [
-            Icon(icon, color: isPrimary ? const Color(0xFF667eea) : Colors.white, size: 20),
-            const SizedBox(width: 8),
-            Text(
-              label,
-              style: TextStyle(
-                color: isPrimary ? const Color(0xFF667eea) : Colors.white,
-                fontWeight: FontWeight.bold,
-              ),
+          if (!_showRivales) ...[
+            const SizedBox(height: 8),
+            const Text(
+              'Haz clic en el botón "+" para crear uno.',
+              style: TextStyle(color: Colors.grey),
             ),
           ],
-        ),
+        ],
       ),
     );
   }
@@ -205,93 +303,149 @@ class _TeamsScreenState extends State<TeamsScreen> {
         ],
         border: Border.all(color: Colors.grey.shade100),
       ),
-      child: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          children: [
-            Row(
+      child: Stack(
+        children: [
+          Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: Column(
               children: [
-                Container(
-                  width: 50,
-                  height: 50,
-                  decoration: BoxDecoration(
-                    color: Colors.grey.shade100,
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: const Icon(Icons.group, color: Color(0xFF667eea)),
-                ),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        team['nombre'] ?? 'Sin nombre',
-                        style: const TextStyle(
-                          fontSize: 17,
-                          fontWeight: FontWeight.bold,
-                          color: Color(0xFF333333),
-                        ),
+                Row(
+                  children: [
+                    Container(
+                      width: 50,
+                      height: 50,
+                      decoration: BoxDecoration(
+                        color: Colors.grey.shade100,
+                        borderRadius: BorderRadius.circular(12),
                       ),
-                      Text(
-                        team['categoriaFutbol'] ?? 'Categoría libre',
-                        style: TextStyle(color: Colors.grey.shade600, fontSize: 13),
+                      child: const Icon(Icons.group, color: Color(0xFF667eea)),
+                    ),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            team['nombre'] ?? 'Sin nombre',
+                            style: const TextStyle(
+                              fontSize: 17,
+                              fontWeight: FontWeight.bold,
+                              color: Color(0xFF333333),
+                            ),
+                          ),
+                          Text(
+                            team['categoriaFutbol'] ?? 'Categoría libre',
+                            style: TextStyle(color: Colors.grey.shade600, fontSize: 13),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+                if (!_isIsolatedRivalsMode) ...[
+                  const SizedBox(height: 16),
+                  const Divider(),
+                  const SizedBox(height: 8),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                    children: [
+                      _buildTeamActionButton(
+                        icon: Icons.play_arrow,
+                        label: 'Jugar',
+                        color: Colors.green.shade700,
+                        onTap: () async {
+                          await matchState.selectTeam(team['id']);
+                          if (mounted) {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(builder: (_) => const PreMatchConfigScreen()),
+                            );
+                          }
+                        },
+                      ),
+                      _buildTeamActionButton(
+                        icon: Icons.person_search,
+                        label: 'Plantilla',
+                        color: const Color(0xFF667eea),
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(builder: (_) => ManagePlayersScreen(team: team)),
+                          );
+                        },
+                      ),
+                      _buildTeamActionButton(
+                        icon: Icons.table_chart_outlined,
+                        label: 'Tabla',
+                        color: Colors.orange.shade700,
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(builder: (_) => StandingsScreen(club: widget.club, currentTeam: team)),
+                          );
+                        },
+                      ),
+                      _buildTeamActionButton(
+                        icon: Icons.sports_soccer,
+                        label: 'Rivales',
+                        color: Colors.redAccent.shade700,
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(builder: (_) => TeamsScreen(club: widget.club, initialShowRivales: true, currentTeam: team)),
+                          );
+                        },
                       ),
                     ],
                   ),
-                ),
+                ],
               ],
             ),
-            const SizedBox(height: 16),
-            const Divider(),
-            const SizedBox(height: 8),
-            Row(
+          ),
+          Positioned(
+            top: 4,
+            right: 4,
+            child: IconButton(
+              icon: const Icon(Icons.delete_outline, color: Colors.redAccent, size: 20),
+              tooltip: 'Eliminar Equipo',
+              onPressed: () => _showDeleteConfirmation(team),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildTeamActionButton({
+    required IconData icon,
+    required String label,
+    required Color color,
+    required VoidCallback onTap,
+  }) {
+    return Expanded(
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(8),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 8.0),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
               children: [
-                Expanded(
-                  child: TextButton.icon(
-                    onPressed: () async {
-                      await matchState.selectTeam(team['id']);
-                      if (mounted) {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(builder: (_) => const PreMatchConfigScreen()),
-                        );
-                      }
-                    },
-                    icon: const Icon(Icons.play_arrow, size: 18),
-                    label: const Text('Jugar'),
-                    style: TextButton.styleFrom(
-                      foregroundColor: Colors.green.shade700,
-                    ),
-                  ),
-                ),
-                Container(width: 1, height: 20, color: Colors.grey.shade300),
-                Expanded(
-                  child: TextButton.icon(
-                    onPressed: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(builder: (_) => ManagePlayersScreen(team: team)),
-                      );
-                    },
-                    icon: const Icon(Icons.person_search, size: 18),
-                    label: const Text('Plantilla'),
-                    style: TextButton.styleFrom(
-                      foregroundColor: const Color(0xFF667eea),
-                    ),
-                  ),
-                ),
-                Container(width: 1, height: 20, color: Colors.grey.shade300),
-                Expanded(
-                  child: IconButton(
-                    onPressed: () => _showDeleteConfirmation(team),
-                    icon: const Icon(Icons.delete_outline, color: Colors.redAccent, size: 20),
-                    tooltip: 'Eliminar Equipo',
+                Icon(icon, color: color, size: 22),
+                const SizedBox(height: 4),
+                Text(
+                  label,
+                  style: TextStyle(
+                    color: color,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
                   ),
                 ),
               ],
             ),
-          ],
+          ),
         ),
       ),
     );

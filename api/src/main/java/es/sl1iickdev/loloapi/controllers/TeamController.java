@@ -25,6 +25,11 @@ public class TeamController {
         return teamService.getTeamsByClub(clubId);
     }
 
+    @GetMapping("/{teamId}/rivals")
+    public List<TeamDTO> getRivalesByTeam(@PathVariable Long teamId) {
+        return teamService.getRivalesByTeam(teamId);
+    }
+
     @GetMapping("/{id}")
     public TeamDTO getTeamById(@PathVariable Long id) {
         return teamService.getTeamById(id);
@@ -33,5 +38,11 @@ public class TeamController {
     @PostMapping
     public ResponseEntity<TeamDTO> createTeam(@RequestBody TeamDTO dto) {
         return ResponseEntity.ok(teamService.createTeam(dto));
+    }
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> deleteTeam(@PathVariable Long id) {
+        teamService.deleteTeam(id);
+        return ResponseEntity.noContent().build();
     }
 }

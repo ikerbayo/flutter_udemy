@@ -230,6 +230,15 @@ class LiveMatchScreen extends StatelessWidget {
   }
 
   Widget _buildPlayerBar() {
+    final filteredPlayers = matchState.currentMatchPlayers
+        .where((p) => p.name.toUpperCase() != 'EQUIPO' && p.dorsal != '0')
+        .toList()
+      ..sort((a, b) {
+        int aNum = int.tryParse(a.dorsal) ?? 0;
+        int bNum = int.tryParse(b.dorsal) ?? 0;
+        return bNum.compareTo(aNum);
+      });
+
     return Container(
       height: 110,
       padding: const EdgeInsets.symmetric(vertical: 16),
@@ -240,9 +249,8 @@ class LiveMatchScreen extends StatelessWidget {
       child: ListView.builder(
         scrollDirection: Axis.horizontal,
         padding: const EdgeInsets.symmetric(horizontal: 16),
-        itemCount: matchState.currentMatchPlayers.where((p) => p.name.toUpperCase() != 'EQUIPO' && p.dorsal != '0').length,
+        itemCount: filteredPlayers.length,
         itemBuilder: (context, index) {
-          final filteredPlayers = matchState.currentMatchPlayers.where((p) => p.name.toUpperCase() != 'EQUIPO' && p.dorsal != '0').toList();
           final player = filteredPlayers[index];
           bool isSelected = matchState.selectedPlayer?.id == player.id;
           return GestureDetector(
@@ -289,6 +297,7 @@ class LiveMatchScreen extends StatelessWidget {
     ) ?? false;
 
     if (confirm) {
+      matchState.pauseTimer(); // Detener cronómetro al finalizar
       if (matchState.recordedEvents.isNotEmpty) {
         await apiService.syncEvents(matchState.recordedEvents);
       }

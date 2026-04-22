@@ -33,7 +33,10 @@ class _PreMatchConfigScreenState extends State<PreMatchConfigScreen> {
 
   Future<void> _loadMyTeams() async {
     try {
-      final teams = await apiService.getMyTeams();
+      final teamId = matchState.currentTeamId;
+      final teams = teamId != null
+          ? await apiService.getRivalesByTeam(teamId)
+          : await apiService.getMyTeams();
       setState(() {
         _myTeams = teams;
         _isLoadingTeams = false;
@@ -50,7 +53,10 @@ class _PreMatchConfigScreenState extends State<PreMatchConfigScreen> {
     return Scaffold(
       extendBodyBehindAppBar: true,
       appBar: AppBar(
-        title: const Text('Configurar Partido', style: TextStyle(fontWeight: FontWeight.bold)),
+        title: const Text(
+          'Configurar Partido',
+          style: TextStyle(fontWeight: FontWeight.bold),
+        ),
         backgroundColor: Colors.transparent,
         elevation: 0,
         foregroundColor: Colors.white,
@@ -71,7 +77,10 @@ class _PreMatchConfigScreenState extends State<PreMatchConfigScreen> {
                 padding: const EdgeInsets.symmetric(horizontal: 24.0),
                 child: Text(
                   'Personaliza los detalles del encuentro antes de saltar al campo.',
-                  style: TextStyle(color: Colors.white.withOpacity(0.9), fontSize: 14),
+                  style: TextStyle(
+                    color: Colors.white.withOpacity(0.9),
+                    fontSize: 14,
+                  ),
                 ),
               ),
               const SizedBox(height: 20),
@@ -80,14 +89,19 @@ class _PreMatchConfigScreenState extends State<PreMatchConfigScreen> {
                   width: double.infinity,
                   decoration: const BoxDecoration(
                     color: Colors.white,
-                    borderRadius: BorderRadius.vertical(top: Radius.circular(32)),
+                    borderRadius: BorderRadius.vertical(
+                      top: Radius.circular(32),
+                    ),
                   ),
                   child: SingleChildScrollView(
                     padding: const EdgeInsets.all(24.0),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
-                        _buildSectionHeader('¿Contra quién juegas?', Icons.sports_soccer),
+                        _buildSectionHeader(
+                          '¿Contra quién juegas?',
+                          Icons.sports_soccer,
+                        ),
                         const SizedBox(height: 16),
                         _buildModeSelector(),
                         const SizedBox(height: 24),
@@ -116,7 +130,11 @@ class _PreMatchConfigScreenState extends State<PreMatchConfigScreen> {
         const SizedBox(width: 12),
         Text(
           title,
-          style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFF333333)),
+          style: const TextStyle(
+            fontSize: 18,
+            fontWeight: FontWeight.bold,
+            color: Color(0xFF333333),
+          ),
         ),
       ],
     );
@@ -133,12 +151,12 @@ class _PreMatchConfigScreenState extends State<PreMatchConfigScreen> {
         segments: const [
           ButtonSegment(
             value: RivalMode.free,
-            label: Text('Nombre libre'),
+            label: Text('Nuevo rival'),
             icon: Icon(Icons.edit, size: 18),
           ),
           ButtonSegment(
             value: RivalMode.system,
-            label: Text('De mis equipos'),
+            label: Text('Equipos rivales'),
             icon: Icon(Icons.list, size: 18),
           ),
         ],
@@ -151,7 +169,8 @@ class _PreMatchConfigScreenState extends State<PreMatchConfigScreen> {
         },
         style: ButtonStyle(
           backgroundColor: WidgetStateProperty.resolveWith<Color?>((states) {
-            if (states.contains(WidgetState.selected)) return const Color(0xFF667eea);
+            if (states.contains(WidgetState.selected))
+              return const Color(0xFF667eea);
             return null;
           }),
           foregroundColor: WidgetStateProperty.resolveWith<Color?>((states) {
@@ -159,7 +178,9 @@ class _PreMatchConfigScreenState extends State<PreMatchConfigScreen> {
             return Colors.grey.shade700;
           }),
           side: WidgetStateProperty.all(BorderSide.none),
-          shape: WidgetStateProperty.all(RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))),
+          shape: WidgetStateProperty.all(
+            RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          ),
         ),
       ),
     );
@@ -169,7 +190,10 @@ class _PreMatchConfigScreenState extends State<PreMatchConfigScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text('Escribe el nombre del rival:', style: TextStyle(color: Color(0xFF888888), fontSize: 14)),
+        const Text(
+          'Escribe el nombre del rival:',
+          style: TextStyle(color: Color(0xFF888888), fontSize: 14),
+        ),
         const SizedBox(height: 8),
         TextField(
           controller: _rivalNameController,
@@ -177,10 +201,22 @@ class _PreMatchConfigScreenState extends State<PreMatchConfigScreen> {
             hintText: 'Ej: Colegio San José',
             filled: true,
             fillColor: Colors.grey.shade50,
-            prefixIcon: const Icon(Icons.drive_file_rename_outline, color: Color(0xFF667eea)),
-            border: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: BorderSide(color: Colors.grey.shade300)),
-            enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: BorderSide(color: Colors.grey.shade300)),
-            focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: const BorderSide(color: Color(0xFF667eea), width: 2)),
+            prefixIcon: const Icon(
+              Icons.drive_file_rename_outline,
+              color: Color(0xFF667eea),
+            ),
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(16),
+              borderSide: BorderSide(color: Colors.grey.shade300),
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(16),
+              borderSide: BorderSide(color: Colors.grey.shade300),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(16),
+              borderSide: const BorderSide(color: Color(0xFF667eea), width: 2),
+            ),
           ),
         ),
       ],
@@ -188,27 +224,43 @@ class _PreMatchConfigScreenState extends State<PreMatchConfigScreen> {
   }
 
   Widget _buildSystemTeamSelector() {
-    if (_isLoadingTeams) return const Center(child: CircularProgressIndicator());
+    if (_isLoadingTeams)
+      return const Center(child: CircularProgressIndicator());
     if (_myTeams.isEmpty) {
       return Container(
         padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(color: Colors.amber.shade50, borderRadius: BorderRadius.circular(12)),
-        child: Text('No tienes otros equipos creados. Usa "Nombre libre".', style: TextStyle(color: Colors.amber.shade900)),
+        decoration: BoxDecoration(
+          color: Colors.amber.shade50,
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Text(
+          'No tienes equipos rivales registrados. Puedes crear un equipo rival de forma libre en la sección "Crea nuevo rival".',
+          style: TextStyle(color: Colors.amber.shade900),
+        ),
       );
     }
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text('Selecciona uno de tus equipos:', style: TextStyle(color: Color(0xFF888888), fontSize: 14)),
+        const Text(
+          'Selecciona uno de tus equipos:',
+          style: TextStyle(color: Color(0xFF888888), fontSize: 14),
+        ),
         const SizedBox(height: 8),
         DropdownButtonFormField<int>(
           decoration: InputDecoration(
             filled: true,
             fillColor: Colors.grey.shade50,
             prefixIcon: const Icon(Icons.shield, color: Color(0xFF667eea)),
-            border: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: BorderSide(color: Colors.grey.shade300)),
-            enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: BorderSide(color: Colors.grey.shade300)),
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(16),
+              borderSide: BorderSide(color: Colors.grey.shade300),
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(16),
+              borderSide: BorderSide(color: Colors.grey.shade300),
+            ),
           ),
           value: _rivalTeamId,
           hint: const Text('Elige equipo...'),
@@ -238,7 +290,10 @@ class _PreMatchConfigScreenState extends State<PreMatchConfigScreen> {
       child: const Row(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Text('Configurar Alineación', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+          Text(
+            'Configurar Alineación',
+            style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+          ),
           SizedBox(width: 10),
           Icon(Icons.arrow_forward),
         ],
@@ -249,11 +304,15 @@ class _PreMatchConfigScreenState extends State<PreMatchConfigScreen> {
   Future<void> _handleContinue() async {
     final name = _rivalNameController.text.trim();
     if (_rivalMode == RivalMode.free && name.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Escribe un nombre para el rival')));
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Escribe un nombre para el rival')),
+      );
       return;
     }
     if (_rivalMode == RivalMode.system && _rivalTeamId == null) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Selecciona un equipo rival')));
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Selecciona un equipo rival')),
+      );
       return;
     }
 
@@ -262,9 +321,10 @@ class _PreMatchConfigScreenState extends State<PreMatchConfigScreen> {
       showDialog(
         context: context,
         barrierDismissible: false,
-        builder: (_) => const Center(child: CircularProgressIndicator(color: Colors.white)),
+        builder: (_) =>
+            const Center(child: CircularProgressIndicator(color: Colors.white)),
       );
-      
+
       // Encontrar el clubId del equipo actual
       int? currentClubId;
       for (var club in matchState.cachedClubs) {
@@ -277,10 +337,13 @@ class _PreMatchConfigScreenState extends State<PreMatchConfigScreen> {
       }
 
       if (currentClubId != null) {
-        final realRivalId = await matchState.ensureExternalRival(name, currentClubId);
+        final realRivalId = await matchState.ensureExternalRival(
+          name,
+          currentClubId,
+        );
         matchState.rivalTeamId = realRivalId;
       }
-      
+
       if (mounted) Navigator.pop(context); // Quitar loading
       matchState.rivalName = name;
     } else {
@@ -291,12 +354,20 @@ class _PreMatchConfigScreenState extends State<PreMatchConfigScreen> {
       // También identificar al jugador fantasma para equipos del sistema
       try {
         final players = await apiService.getPlayers(_rivalTeamId!);
-        final ghost = players.where((p) => p['nombre'] == 'EQUIPO' || p['dorsal'] == '0').firstOrNull;
+        final ghost = players
+            .where((p) => p['nombre'] == 'EQUIPO' || p['dorsal'] == '0')
+            .firstOrNull;
         if (ghost != null) {
           matchState.rivalGhostPlayerId = int.tryParse(ghost['id'].toString());
         } else {
           // Si no existe, lo creamos para que los goles cuenten
-          final newGhost = await apiService.createPlayer('EQUIPO', 0, _rivalTeamId!);
+          final newGhost = await apiService.createPlayer(
+            'EQUIPO',
+            0,
+            'Desconocida',
+            '',
+            _rivalTeamId!,
+          );
           matchState.rivalGhostPlayerId = newGhost?['id'] as int?;
         }
       } catch (e) {
@@ -304,8 +375,8 @@ class _PreMatchConfigScreenState extends State<PreMatchConfigScreen> {
       }
     }
 
-    matchState.rivalPlayers = []; 
-    
+    matchState.rivalPlayers = [];
+
     if (mounted) {
       Navigator.push(
         context,

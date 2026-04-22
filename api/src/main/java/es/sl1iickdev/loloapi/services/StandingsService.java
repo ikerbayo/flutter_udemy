@@ -44,6 +44,22 @@ public class StandingsService {
         return calculateStandings(clubId);
     }
 
+    public List<StandingsDTO> getStandingsByTeam(Long teamId) {
+        User user = SecurityUtils.getCurrentUser();
+        Team coreTeam = teamRepository.findByIdAndClubPropietarioId(teamId, user.getId())
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.FORBIDDEN, "No tienes acceso a este equipo"));
+
+        List<Team> rivals = teamRepository.findByParentTeamIdAndClubPropietarioId(teamId, user.getId());
+        Set<Long> leagueTeamIds = new HashSet<>();
+        leagueTeamIds.add(teamId);
+        for(Team r : rivals) leagueTeamIds.add(r.getId());
+
+        List<StandingsDTO> globalStandings = calculateStandings(coreTeam.getClub().getId());
+        return globalStandings.stream()
+                .filter(s -> leagueTeamIds.contains(s.getTeamId()))
+                .collect(Collectors.toList());
+    }
+
     public List<MatchHistoryDTO> getMatchHistory(Long teamId) {
         User user = SecurityUtils.getCurrentUser();
         teamRepository.findByIdAndClubPropietarioId(teamId, user.getId())

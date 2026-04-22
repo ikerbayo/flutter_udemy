@@ -242,12 +242,15 @@ class _MatchSummaryScreenState extends State<MatchSummaryScreen> {
 
   Widget _buildActions(BuildContext context) {
     Map<String, dynamic>? currentClub;
+    Map<String, dynamic>? currentTeamObj;
     if (matchState.currentTeamId != null) {
       for (var club in matchState.cachedClubs) {
         final clubId = club['id'];
         final teams = matchState.cachedTeams[clubId] ?? [];
-        if (teams.any((t) => t['id'] == matchState.currentTeamId)) {
+        final foundTeam = teams.where((t) => t['id'] == matchState.currentTeamId).firstOrNull;
+        if (foundTeam != null) {
           currentClub = club;
+          currentTeamObj = foundTeam;
           break;
         }
       }
@@ -260,7 +263,7 @@ class _MatchSummaryScreenState extends State<MatchSummaryScreen> {
             onPressed: () {
               Navigator.push(
                 context,
-                MaterialPageRoute(builder: (_) => StandingsScreen(club: currentClub!)),
+                MaterialPageRoute(builder: (_) => StandingsScreen(club: currentClub!, currentTeam: currentTeamObj)),
               );
             },
             icon: const Icon(Icons.table_chart_outlined),

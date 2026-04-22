@@ -275,7 +275,7 @@ class MatchState extends ChangeNotifier {
 
   Future<void> _ensureGhostPlayer(int teamId) async {
     try {
-      final result = await apiService.createPlayer('EQUIPO', 0, teamId);
+      final result = await apiService.createPlayer('EQUIPO', 0, 'Desconocida', '', teamId);
       if (result != null && result['id'] != null) {
         teamGhostPlayerId = result['id'] as int;
       }
@@ -287,13 +287,22 @@ class MatchState extends ChangeNotifier {
   /// Asegura que un rival con nombre libre tenga una entidad real en la DB para que sus goles cuenten
   Future<int?> ensureExternalRival(String name, int clubId) async {
     try {
-      // 1. Buscar si el equipo ya existe en el club actual
-      final teams = await apiService.getTeamsByClub(clubId);
+      // 1. Buscar si el equipo ya existe en los rivales de este equipo
+      final teams = currentTeamId != null 
+          ? await apiService.getRivalesByTeam(currentTeamId!)
+          : await apiService.getTeamsByClub(clubId);
+      
       var rivalTeam = teams.where((t) => t['nombre'] == name).firstOrNull;
 
       if (rivalTeam == null) {
-        // Marcamos la categoría como 'Externo' para poder filtrarlos luego
-        rivalTeam = await apiService.createTeam(name, 'Externo', clubId, 'https://via.placeholder.com/150');
+        // Asociar como rival del equipo actual si existe el scope
+        rivalTeam = await apiService.createTeam(
+          name, 
+          'Externo', 
+          clubId, 
+          'https://via.placeholder.com/150',
+          parentTeamId: currentTeamId
+        );
       }
 
       final rivalId = rivalTeam['id'] as int;
@@ -302,7 +311,7 @@ class MatchState extends ChangeNotifier {
       final rivalPlayersData = await apiService.getPlayers(rivalId);
       var ghost = rivalPlayersData.where((p) => p['nombre'] == 'EQUIPO' || p['dorsal'] == '0').firstOrNull;
       if (ghost == null) {
-        final newGhost = await apiService.createPlayer('EQUIPO', 0, rivalId);
+        final newGhost = await apiService.createPlayer('EQUIPO', 0, 'Desconocida', '', rivalId);
         rivalGhostPlayerId = newGhost?['id'] as int?;
       } else {
         rivalGhostPlayerId = int.tryParse(ghost['id'].toString());
@@ -562,6 +571,8 @@ class MatchState extends ChangeNotifier {
       final json = await apiService.createPlayer(
         name,
         int.tryParse(dorsal) ?? 0,
+        'Desconocida',
+        '',
         currentTeamId!,
       );
       if (json != null) {

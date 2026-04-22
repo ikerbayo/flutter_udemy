@@ -20,6 +20,11 @@ public class StandingsController {
         return standingsService.getStandingsByClub(clubId);
     }
 
+    @GetMapping("/team/{teamId}")
+    public List<StandingsDTO> getStandingsByTeam(@PathVariable Long teamId) {
+        return standingsService.getStandingsByTeam(teamId);
+    }
+
     @GetMapping("/my-standings")
     public List<StandingsDTO> getMyStandings() {
         return standingsService.getMyStandings();
